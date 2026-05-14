@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpsCenter — Wallet & Upload</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #0f0f1a; color: #e0e0f0; font-family: system-ui, sans-serif; }
+    select, input[type=text], input[type=number], input[type=email], input[type=password] {
+      background: #2a2a3e; color: #e0e0f0; border: 1px solid #3a3a5c;
+    }
+    select option { background: #1e1e2e; }
+    .toast { animation: slideIn .3s ease; }
+    @keyframes slideIn { from { transform:translateY(20px);opacity:0 } to { transform:translateY(0);opacity:1 } }
+    .fade-in { animation: fadeIn .4s ease; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    ::-webkit-scrollbar { width:6px } ::-webkit-scrollbar-track { background:#1e1e2e } ::-webkit-scrollbar-thumb { background:#3a3a5c; border-radius:3px }
+    .progress-bar { transition: width .3s ease; }
+    .file-row:hover { background:#2a2a3e88 }
+    .dropzone-active { border-color:#6366f1!important; background:#6366f120!important; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+<!-- Header -->
+<header class="border-b border-[#3a3a5c] bg-[#1e1e2e] px-6 py-4 flex items-center gap-3 sticky top-0 z-40">
+  <div class="w-9 h-9 rounded-lg bg-indigo-500 flex items-center justify-center text-white font-bold text-lg select-none">O</div>
+  <span class="font-bold text-xl tracking-tight">OpsCenter</span>
+  <div class="ml-auto flex gap-2">
+    <button onclick="showSection('upload')" id="nav-upload"
+      class="nav-btn px-4 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 text-white">Upload</button>
+    <button onclick="showSection('wallet')" id="nav-wallet"
+      class="nav-btn px-4 py-1.5 rounded-lg text-sm font-medium bg-[#2a2a3e] text-gray-300 hover:bg-[#3a3a5c]">Wallet</button>
+  </div>
+</header>
+
+<!-- UPLOAD SECTION -->
+<section id="section-upload" class="max-w-4xl mx-auto px-4 py-8 fade-in">
+  <h1 class="text-2xl font-bold mb-1">File Upload</h1>
+  <p class="text-sm text-gray-400 mb-6">Upload files, folders and ZIP archives to your site. Up to 1 GB per file. Folder structure is preserved.</p>
+
+  <!-- Site selector -->
+  <div class="mb-5 flex items-end gap-3">
+    <div class="flex-1">
+      <label class="block text-xs font-medium text-gray-400 mb-1">Target Site ID</label>
+      <input id="site-id-input" type="number" min="1" value="1"
+        class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+    </div>
+    <button onclick="loadFiles()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm rounded-lg">Load Files</button>
+  </div>
+
+  <div class="grid md:grid-cols-5 gap-6">
+    <!-- Upload panel -->
+    <div class="md:col-span-2 space-y-4">
+      <div class="bg-[#1e1e2e] border border-[#3a3a5c] rounded-xl p-5">
+        <h2 class="text-base font-semibold mb-1">Upload Files</h2>
+        <p class="text-xs text-gray-400 mb-4">HTML, CSS, JS, images, ZIPs, any file type</p>
+
+        <!-- Dropzone -->
+        <div id="dropzone"
+          class="border-2 border-dashed border-[#3a3a5c] rounded-xl p-8 flex flex-col items-center gap-2 text-center cursor-pointer transition-all hover:border-indigo-500/50 hover:bg-[#2a2a3e]/40 mb-4"
+          onclick="document.getElementById('file-input').click()"
+          ondragover="dzOver(event)" ondragleave="dzLeave()" ondrop="dzDrop(event)">
+          <svg class="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+          </svg>
+          <p class="text-sm font-medium text-gray-300">Drop files or folders here</p>
+          <p class="text-xs text-gray-500">or use the buttons below</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 mb-4">
+          <button onclick="document.getElementById('file-input').click()"
+            class="py-2 border border-[#3a3a5c] hover:bg-[#3a3a5c] text-sm rounded-lg flex items-center justify-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            Files
+          </button>
+          <button onclick="document.getElementById('folder-input').click()"
+            class="py-2 border border-[#3a3a5c] hover:bg-[#3a3a5c] text-sm rounded-lg flex items-center justify-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+            Folder
+          </button>
+        </div>
+
+        <input id="file-input" type="file" multiple class="hidden"
+          onchange="addFilesFromInput(this.files);this.value=''"/>
+        <input id="folder-input" type="file" multiple webkitdirectory class="hidden"
+          onchange="addFilesFromInput(this.files);this.value=''"/>
+
+        <!-- Queue -->
+        <div id="queue-panel" class="hidden">
+          <div class="flex items-center justify-between mb-2">
+            <span id="queue-count" class="text-xs font-medium text-gray-400">0 files queued</span>
+            <button onclick="clearQueue()" class="text-xs text-gray-500 hover:text-red-400">Clear all</button>
+          </div>
+          <div id="queue-list" class="max-h-40 overflow-y-auto space-y-1 rounded-lg border border-[#3a3a5c] p-2 bg-[#0f0f1a] mb-3"></div>
+          <button id="upload-btn" onclick="uploadQueue()"
+            class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg">
+            Upload files
+          </button>
+        </div>
+
+        <!-- Progress -->
+        <div id="progress-panel" class="hidden space-y-1 mt-3">
+          <div class="flex justify-between text-xs text-gray-400">
+            <span>Uploading…</span><span id="progress-pct">0%</span>
+          </div>
+          <div class="h-2 rounded-full bg-[#2a2a3e] overflow-hidden">
+            <div id="progress-bar" class="progress-bar h-full bg-indigo-500 rounded-full" style="width:0%"></div>
+          </div>
+        </div>
+
+        <!-- Error -->
+        <div id="upload-error" class="hidden mt-3 text-sm text-red-400 bg-red-500/10 rounded-lg px-3 py-2 flex items-start gap-2">
+          <svg class="w-4 h-4 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span id="upload-error-msg"></span>
+        </div>
+      </div>
+
+      <!-- Supported formats -->
+      <div class="bg-[#1e1e2e] border border-[#3a3a5c] rounded-xl p-4">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Supported formats</p>
+        <div class="flex flex-wrap gap-1">
+          <span class="bg-emerald-500/10 text-emerald-400 text-xs px-2 py-0.5 rounded">HTML</span>
+          <span class="bg-blue-500/10 text-blue-400 text-xs px-2 py-0.5 rounded">CSS</span>
+          <span class="bg-yellow-500/10 text-yellow-400 text-xs px-2 py-0.5 rounded">JS</span>
+          <span class="bg-purple-500/10 text-purple-400 text-xs px-2 py-0.5 rounded">TS/TSX</span>
+          <span class="bg-orange-500/10 text-orange-400 text-xs px-2 py-0.5 rounded">ZIP ★</span>
+          <span class="bg-pink-500/10 text-pink-400 text-xs px-2 py-0.5 rounded">Images</span>
+          <span class="bg-gray-500/10 text-gray-400 text-xs px-2 py-0.5 rounded">PDF</span>
+          <span class="bg-teal-500/10 text-teal-400 text-xs px-2 py-0.5 rounded">JSON/XML</span>
+          <span class="bg-indigo-500/10 text-indigo-400 text-xs px-2 py-0.5 rounded">Fonts</span>
+          <span class="bg-gray-500/10 text-gray-400 text-xs px-2 py-0.5 rounded">Video</span>
+          <span class="bg-gray-500/10 text-gray-400 text-xs px-2 py-0.5 rounded">Audio</span>
+          <span class="bg-gray-500/10 text-gray-300 text-xs px-2 py-0.5 rounded">+ any file</span>
+        </div>
+        <p class="text-xs text-gray-500 mt-2">★ ZIP files are automatically extracted, preserving all folders and subfolders.</p>
+      </div>
+    </div>
+
+    <!-- Files list -->
+    <div class="md:col-span-3 bg-[#1e1e2e] border border-[#3a3a5c] rounded-xl overflow-hidden">
+      <div class="px-4 py-3 border-b border-[#3a3a5c] flex items-center justify-between">
+        <span class="font-medium text-sm">Uploaded Files</span>
+        <span id="files-count" class="text-xs text-gray-400">—</span>
+      </div>
+      <div id="files-table-wrap" class="overflow-auto max-h-[500px]">
+        <table class="w-full text-sm">
+          <thead class="bg-[#2a2a3e] text-gray-400 text-xs uppercase tracking-wide sticky top-0">
+            <tr>
+              <th class="px-4 py-2 text-left">Name</th>
+              <th class="px-4 py-2 text-left">Path</th>
+              <th class="px-4 py-2 text-left">Type</th>
+              <th class="px-4 py-2 text-right">Size</th>
+            </tr>
+          </thead>
+          <tbody id="files-body">
+            <tr><td colspan="4" class="py-10 text-center text-gray-500 text-xs">Select a site and click Load Files</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WALLET SECTION -->
+<section id="section-wallet" class="hidden max-w-5xl mx-auto px-4 py-8 fade-in">
+  <h1 class="text-2xl font-bold mb-1">Admin Wallet</h1>
+  <p class="text-sm text-gray-400 mb-6">Manage your admin balance and withdrawals.</p>
+
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-indigo-600/20 border border-indigo-500/30 rounded-xl p-4">
+      <p class="text-xs text-indigo-300 font-medium mb-1">Available Balance</p>
+      <p class="text-2xl font-bold text-indigo-300" id="balance-display">₦0.00</p>
+      <p class="text-xs text-indigo-400/70 mt-1">Ready to withdraw</p>
+    </div>
+    <div class="bg-[#2a2a3e] border border-[#3a3a5c] rounded-xl p-4">
+      <p class="text-xs text-gray-400 mb-1">Total Earned</p>
+      <p class="text-xl font-bold" id="earned-display">₦0.00</p>
+    </div>
+    <div class="bg-[#2a2a3e] border border-[#3a3a5c] rounded-xl p-4">
+      <p class="text-xs text-gray-400 mb-1">Withdrawn</p>
+      <p class="text-xl font-bold" id="withdrawn-display">₦0.00</p>
+    </div>
+    <div class="bg-[#2a2a3e] border border-[#3a3a5c] rounded-xl p-4">
+      <p class="text-xs text-gray-400 mb-1">Pending</p>
+      <p class="text-xl font-bold text-yellow-400" id="pending-display">₦0.00</p>
+    </div>
+  </div>
+
+  <div class="grid md:grid-cols-5 gap-6">
+    <div class="md:col-span-2 bg-[#1e1e2e] border border-[#3a3a5c] rounded-xl p-5">
+      <h2 class="font-semibold text-base mb-1">Withdraw Funds</h2>
+      <p class="text-xs text-gray-400 mb-5">Transfer to local or Pilgrim Bank account</p>
+      <form id="withdraw-form" class="space-y-4" onsubmit="submitWithdrawal(event)">
+        <div>
+          <label class="block text-sm font-medium mb-1 text-gray-300">Bank Name</label>
+          <select id="bank-name" class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+            <option value="">Select bank…</option>
+            <option>Access Bank</option><option>Citibank Nigeria</option><option>Ecobank Nigeria</option>
+            <option>Fidelity Bank</option><option>First Bank of Nigeria</option><option>First City Monument Bank (FCMB)</option>
+            <option>Globus Bank</option><option>Guaranty Trust Bank (GTBank)</option><option>Heritage Bank</option>
+            <option>Keystone Bank</option><option>Kuda Bank</option><option>OPay</option><option>Palmpay</option>
+            <option>Polaris Bank</option><option>Providus Bank</option><option>Stanbic IBTC Bank</option>
+            <option>Standard Chartered Bank</option><option>Sterling Bank</option><option>SunTrust Bank</option>
+            <option>Union Bank of Nigeria</option><option>United Bank for Africa (UBA)</option><option>Unity Bank</option>
+            <option>Wema Bank</option><option>Zenith Bank</option><option>Pilgrim Bank (Global)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1 text-gray-300">Account Number</label>
+          <input id="account-number" type="text" placeholder="0123456789" maxlength="10"
+            oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)"
+            class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1 text-gray-300">Account Name</label>
+          <input id="account-name" type="text" placeholder="Full name on account"
+            class="w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required/>
+        </div>
+        <div>
+          <label class="block text-sm font-medium mb-1 text-gray-300">Amount (NGN)</label>
+          <div class="relative">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">₦</span>
+            <input id="amount" type="number" placeholder="0.00" min="1" step="0.01"
+              class="w-full rounded-lg pl-7 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" required/>
+          </div>
+          <p class="text-xs text-gray-500 mt-1">Available: <span id="balance-hint">₦0.00</span></p>
+        </div>
+        <div id="form-error" class="hidden text-sm text-red-400 bg-red-500/10 rounded-lg px-3 py-2"></div>
+        <button type="submit"
+          class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg text-sm flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+          Send Withdrawal Request
+        </button>
+      </form>
+    </div>
+
+    <div class="md:col-span-3 space-y-4">
+      <div class="flex gap-2">
+        <button onclick="showTab('transactions')" id="tab-tx" class="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-600 text-white">Transactions</button>
+        <button onclick="showTab('withdrawals')" id="tab-wd" class="px-4 py-2 rounded-lg text-sm font-medium bg-[#2a2a3e] text-gray-300 hover:bg-[#3a3a5c]">Withdrawals</button>
+      </div>
+      <div id="panel-transactions" class="bg-[#1e1e2e] border border-[#3a3a5c] rounded-xl overflow-hidden">
+        <table class="w-full text-sm"><thead class="bg-[#2a2a3e] text-gray-400 text-xs uppercase tracking-wide"><tr>
+          <th class="px-4 py-3 text-left">Description</th><th class="px-4 py-3 text-left">Type</th>
+          <th class="px-4 py-3 text-left">Status</th><th class="px-4 py-3 text-right">Amount</th>
+        </tr></thead><tbody id="tx-body"><tr><td colspan="4" class="py-8 text-center text-gray-500 text-xs">Loading…</td></tr></tbody></table>
+      </div>
+      <div id="panel-withdrawals" class="hidden bg-[#1e1e2e] border border-[#3a3a5c] rounded-xl overflow-hidden">
+        <table class="w-full text-sm"><thead class="bg-[#2a2a3e] text-gray-400 text-xs uppercase tracking-wide"><tr>
+          <th class="px-4 py-3 text-left">Bank / Account</th><th class="px-4 py-3 text-left">Reference</th>
+          <th class="px-4 py-3 text-left">Status</th><th class="px-4 py-3 text-right">Amount</th>
+        </tr></thead><tbody id="wd-body"><tr><td colspan="4" class="py-8 text-center text-gray-500 text-xs">Loading…</td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Toast -->
+<div id="toast" class="hidden fixed bottom-6 right-6 bg-indigo-600 text-white text-sm font-medium px-5 py-3 rounded-xl shadow-2xl toast flex items-center gap-2 z-50">
+  <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+const API = '/api';
+const fmt = n => new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN',minimumFractionDigits:2}).format(n);
+const fmtBytes = b => { if(!b) return '0 B'; const k=1024,s=['B','KB','MB','GB'],i=Math.floor(Math.log(b)/Math.log(k)); return parseFloat((b/k**i).toFixed(1))+' '+s[i]; };
+let walletBalance = 0;
+let fileQueue = [];
+
+// ─── Navigation ──────────────────────────────────────────
+function showSection(name) {
+  ['upload','wallet'].forEach(s => {
+    document.getElementById('section-'+s).classList.toggle('hidden', s !== name);
+    const btn = document.getElementById('nav-'+s);
+    if (s === name) { btn.classList.add('bg-indigo-600','text-white'); btn.classList.remove('bg-[#2a2a3e]','text-gray-300','hover:bg-[#3a3a5c]'); }
+    else { btn.classList.remove('bg-indigo-600','text-white'); btn.classList.add('bg-[#2a2a3e]','text-gray-300','hover:bg-[#3a3a5c]'); }
+  });
+  if (name === 'wallet') refreshWallet();
+}
+
+// ─── Toast ───────────────────────────────────────────────
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 4000);
+}
+
+// ─── Upload ──────────────────────────────────────────────
+function dzOver(e) { e.preventDefault(); document.getElementById('dropzone').classList.add('dropzone-active'); }
+function dzLeave() { document.getElementById('dropzone').classList.remove('dropzone-active'); }
+
+async function dzDrop(e) {
+  e.preventDefault();
+  dzLeave();
+  const items = Array.from(e.dataTransfer.items);
+  const queued = [];
+  for (const item of items) {
+    if (item.kind !== 'file') continue;
+    const entry = item.webkitGetAsEntry?.();
+    if (entry?.isDirectory) {
+      await readDir(entry, entry.name, queued);
+    } else {
+      const f = item.getAsFile();
+      if (f) queued.push({ file: f, rel: f.name });
+    }
+  }
+  addToQueue(queued);
+}
+
+async function readDir(entry, prefix, result) {
+  return new Promise(resolve => {
+    entry.createReader().readEntries(async entries => {
+      for (const e of entries) {
+        if (e.isFile) {
+          const f = await new Promise(r => e.file(r));
+          result.push({ file: f, rel: prefix ? prefix+'/'+f.name : f.name });
+        } else if (e.isDirectory) {
+          await readDir(e, prefix ? prefix+'/'+e.name : e.name, result);
+        }
+      }
+      resolve();
+    });
+  });
+}
+
+function addFilesFromInput(files) {
+  if (!files) return;
+  const queued = Array.from(files).map(f => ({ file: f, rel: f.webkitRelativePath || f.name }));
+  addToQueue(queued);
+}
+
+const ONE_GB = 1024*1024*1024;
+function addToQueue(incoming) {
+  const oversized = incoming.filter(q => q.file.size > ONE_GB);
+  if (oversized.length) showUploadError(`${oversized.length} file(s) exceed 1 GB and were skipped.`);
+  const valid = incoming.filter(q => q.file.size <= ONE_GB);
+  fileQueue = [...fileQueue, ...valid.map((q,i) => ({...q, id: Date.now()+i}))];
+  renderQueue();
+}
+
+function renderQueue() {
+  const panel = document.getElementById('queue-panel');
+  const list = document.getElementById('queue-list');
+  const countEl = document.getElementById('queue-count');
+  if (fileQueue.length === 0) { panel.classList.add('hidden'); return; }
+  panel.classList.remove('hidden');
+  countEl.textContent = fileQueue.length + ' file(s) queued';
+  document.getElementById('upload-btn').textContent = `Upload ${fileQueue.length} file(s)`;
+  list.innerHTML = fileQueue.map(q => `
+    <div class="flex items-center gap-2 text-xs py-0.5">
+      <span class="flex-1 truncate font-mono text-gray-400">${q.rel}</span>
+      <span class="shrink-0 text-gray-500">${fmtBytes(q.file.size)}</span>
+      <button onclick="removeFromQueue(${q.id})" class="text-gray-500 hover:text-red-400">✕</button>
+    </div>`).join('');
+}
+
+function removeFromQueue(id) { fileQueue = fileQueue.filter(q => q.id !== id); renderQueue(); }
+function clearQueue() { fileQueue = []; renderQueue(); }
+
+function showUploadError(msg) {
+  const el = document.getElementById('upload-error');
+  document.getElementById('upload-error-msg').textContent = msg;
+  el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 6000);
+}
+
+function uploadQueue() {
+  if (!fileQueue.length) return;
+  const siteId = document.getElementById('site-id-input').value;
+  if (!siteId) { showUploadError('Enter a Site ID first.'); return; }
+
+  const fd = new FormData();
+  fileQueue.forEach(q => { fd.append('files', q.file); fd.append('relativePaths', q.rel); });
+
+  const btn = document.getElementById('upload-btn');
+  btn.disabled = true;
+  document.getElementById('progress-panel').classList.remove('hidden');
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', `${API}/sites/${siteId}/upload`);
+  xhr.upload.onprogress = e => {
+    const pct = e.lengthComputable ? Math.round(e.loaded/e.total*100) : 0;
+    document.getElementById('progress-pct').textContent = pct+'%';
+    document.getElementById('progress-bar').style.width = pct+'%';
+  };
+  xhr.onload = () => {
+    document.getElementById('progress-panel').classList.add('hidden');
+    btn.disabled = false;
+    if (xhr.status === 200) {
+      const r = JSON.parse(xhr.responseText);
+      showToast(`Uploaded ${r.filesExtracted} file(s) — ${fmtBytes(r.totalSizeBytes)}`);
+      fileQueue = [];
+      renderQueue();
+      loadFiles();
+    } else {
+      const err = JSON.parse(xhr.responseText);
+      showUploadError(err.error || 'Upload failed.');
+    }
+  };
+  xhr.onerror = () => { document.getElementById('progress-panel').classList.add('hidden'); btn.disabled=false; showUploadError('Network error.'); };
+  xhr.send(fd);
+}
+
+async function loadFiles() {
+  const siteId = document.getElementById('site-id-input').value;
+  if (!siteId) return;
+  const r = await fetch(`${API}/sites/${siteId}/files`);
+  if (!r.ok) { document.getElementById('files-body').innerHTML = '<tr><td colspan="4" class="py-8 text-center text-red-400 text-xs">Could not load files. Check site ID and login.</td></tr>'; return; }
+  const files = await r.json();
+  document.getElementById('files-count').textContent = files.length + ' file(s)';
+  const body = document.getElementById('files-body');
+  if (!files.length) { body.innerHTML = '<tr><td colspan="4" class="py-8 text-center text-gray-500 text-xs">No files yet.</td></tr>'; return; }
+  body.innerHTML = files.map(f => `
+    <tr class="file-row border-t border-[#3a3a5c] transition-colors">
+      <td class="px-4 py-2.5 font-medium text-sm">${f.name}</td>
+      <td class="px-4 py-2.5 font-mono text-xs text-gray-400 max-w-[180px] truncate" title="${f.path}">${f.path}</td>
+      <td class="px-4 py-2.5"><span class="bg-[#2a2a3e] text-gray-300 text-xs px-2 py-0.5 rounded font-mono">${(f.mimeType||'').split('/').pop()?.toUpperCase().slice(0,8)||'—'}</span></td>
+      <td class="px-4 py-2.5 text-right font-mono text-xs">${fmtBytes(f.sizeBytes)}</td>
+    </tr>`).join('');
+}
+
+// ─── Wallet ──────────────────────────────────────────────
+function showTab(name) {
+  ['transactions','withdrawals'].forEach(t => {
+    document.getElementById('panel-'+t).classList.toggle('hidden', t !== name);
+    const btn = document.getElementById('tab-'+(t==='transactions'?'tx':'wd'));
+    if(t===name){btn.classList.add('bg-indigo-600','text-white');btn.classList.remove('bg-[#2a2a3e]','text-gray-300','hover:bg-[#3a3a5c]');}
+    else{btn.classList.remove('bg-indigo-600','text-white');btn.classList.add('bg-[#2a2a3e]','text-gray-300','hover:bg-[#3a3a5c]');}
+  });
+}
+
+const typeBadge = t => ({credit:'<span class="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-0.5 rounded">Credit</span>',withdrawal:'<span class="bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded">Withdrawal</span>'}[t]||'<span class="bg-gray-500/20 text-gray-400 text-xs px-2 py-0.5 rounded">Debit</span>');
+const statusBadge = s => ({completed:'<span class="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-0.5 rounded">✓ Done</span>',pending:'<span class="bg-yellow-500/20 text-yellow-400 text-xs px-2 py-0.5 rounded">⏳ Pending</span>'}[s]||'<span class="bg-red-500/20 text-red-400 text-xs px-2 py-0.5 rounded">✕ Failed</span>');
+
+async function refreshWallet() {
+  const [w, txs, wds] = await Promise.all([
+    fetch(API+'/wallet').then(r=>r.json()).catch(()=>null),
+    fetch(API+'/wallet/transactions').then(r=>r.json()).catch(()=>[]),
+    fetch(API+'/wallet/withdrawals').then(r=>r.json()).catch(()=>[]),
+  ]);
+  if (w) {
+    walletBalance = w.balanceNaira;
+    document.getElementById('balance-display').textContent = fmt(w.balanceNaira);
+    document.getElementById('earned-display').textContent = fmt(w.totalEarnedNaira);
+    document.getElementById('withdrawn-display').textContent = fmt(w.totalWithdrawnNaira);
+    document.getElementById('pending-display').textContent = fmt(w.pendingWithdrawalsNaira);
+    document.getElementById('balance-hint').textContent = fmt(w.balanceNaira);
+  }
+  const txBody = document.getElementById('tx-body');
+  txBody.innerHTML = txs.length ? txs.map(tx=>`<tr class="border-t border-[#3a3a5c] hover:bg-[#2a2a3e]/50"><td class="px-4 py-3 text-gray-200">${tx.description}</td><td class="px-4 py-3">${typeBadge(tx.type)}</td><td class="px-4 py-3">${statusBadge(tx.status)}</td><td class="px-4 py-3 text-right font-mono ${tx.type==='credit'?'text-emerald-400':''}">${tx.type==='credit'?'+':'−'}${fmt(tx.amountNaira)}</td></tr>`).join('') : '<tr><td colspan="4" class="py-8 text-center text-gray-500 text-xs">No transactions yet.</td></tr>';
+  const wdBody = document.getElementById('wd-body');
+  wdBody.innerHTML = wds.length ? wds.map(wd=>`<tr class="border-t border-[#3a3a5c] hover:bg-[#2a2a3e]/50"><td class="px-4 py-3"><div class="font-medium text-sm">${wd.bankName}</div><div class="text-xs text-gray-400">${wd.accountName} · ${wd.accountNumber}</div></td><td class="px-4 py-3 font-mono text-xs text-gray-400">${wd.reference||'—'}</td><td class="px-4 py-3">${statusBadge(wd.status)}</td><td class="px-4 py-3 text-right font-mono">${fmt(wd.amountNaira)}</td></tr>`).join('') : '<tr><td colspan="4" class="py-8 text-center text-gray-500 text-xs">No withdrawals yet.</td></tr>';
+}
+
+async function submitWithdrawal(e) {
+  e.preventDefault();
+  const errEl = document.getElementById('form-error');
+  errEl.classList.add('hidden');
+  const bankName = document.getElementById('bank-name').value;
+  const accountNumber = document.getElementById('account-number').value;
+  const accountName = document.getElementById('account-name').value.trim();
+  const amount = parseFloat(document.getElementById('amount').value);
+  if(!bankName){errEl.textContent='Select a bank.';errEl.classList.remove('hidden');return;}
+  if(!/^\d{10}$/.test(accountNumber)){errEl.textContent='Account number must be 10 digits.';errEl.classList.remove('hidden');return;}
+  if(!accountName){errEl.textContent='Account name required.';errEl.classList.remove('hidden');return;}
+  if(isNaN(amount)||amount<=0){errEl.textContent='Enter a valid amount.';errEl.classList.remove('hidden');return;}
+  if(amount>walletBalance){errEl.textContent='Insufficient balance: '+fmt(walletBalance);errEl.classList.remove('hidden');return;}
+  const btn = e.target.querySelector('button[type=submit]');
+  btn.disabled=true; btn.textContent='Sending…';
+  try {
+    const res = await fetch(API+'/wallet/withdrawals',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({amountNaira:amount,bankName,accountNumber,accountName})});
+    const data = await res.json();
+    if(!res.ok){errEl.textContent=data.error||'Failed.';errEl.classList.remove('hidden');}
+    else{showToast('Withdrawal sent — '+data.reference);e.target.reset();await refreshWallet();}
+  } catch {errEl.textContent='Network error.';errEl.classList.remove('hidden');}
+  finally{btn.disabled=false;btn.textContent='Send Withdrawal Request';}
+}
+</script>
+</body>
+</html>
